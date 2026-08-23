@@ -1,0 +1,8 @@
+# Docker and local runtime artifacts
+**/build/
+**/.gradle/
+**/.env
+
+# IDE files
+.idea/
+*.iml

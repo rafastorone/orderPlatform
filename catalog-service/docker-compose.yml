@@ -1,0 +1,43 @@
+name: catalog-service
+
+services:
+  catalog-service:
+    build:
+      context: .
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8081:8080"
+    depends_on:
+      catalog-service-postgres:
+        condition: service_healthy
+    networks:
+      - orderflow-network
+
+  catalog-service-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: catalog
+      POSTGRES_USER: username
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - catalog-service-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - orderflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catalog_user -d catalog"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  catalog-service-postgres-data:
+    name: catalog-service-postgres-data
+
+networks:
+  orderflow-network:
+    external: true
+    name: orderflow-network
