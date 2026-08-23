@@ -7,7 +7,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
     ports:
-      - "8083:8080"
+      - "8083:8083"
     depends_on:
       order-service-postgres:
         condition: service_healthy
