@@ -1,65 +1,112 @@
 # Domain entities
 
+This view separates entity ownership from cross-service communication. Lines within a service represent domain relationships; lines across services represent opaque references or events, never foreign keys.
+
+```mermaid
+flowchart LR
+    Catalog[Catalog Service]
+    Checkout[Checkout Service]
+    Order[Order Service]
+    Payment[Payment Service]
+
+    Catalog -->|catalog.events| Payment
+    Order -->|order.events| Catalog
+    Payment -->|payment.events| Order
+```
+
 ## Catalog Service
 
-Catalog contains two logical modules in one deployable: **Product** and **Inventory**. They remain separate so Inventory can be extracted later without redesigning the model.
+```mermaid
+flowchart LR
+    Product[Product]
+    Stock[Stock]
+    Reservation[Reservation]
+    ReservationItem[Reservation item]
 
-### Product
+    Product -. same SKU .-> Stock
+    Reservation --> ReservationItem
+```
 
-| Field | Meaning |
-| --- | --- |
-| `id` | Product identifier. |
-| `sku` | Sellable stock-keeping unit. |
-| `name` | Product name. |
-| `price` | Current catalog price. |
-| `status` | Product availability status. |
-| `createdAt`, `updatedAt` | Audit timestamps. |
+Catalog has two logical modules in one deployable: **Product** and **Inventory**. They remain separate so Inventory can be extracted later without redesigning the model.
 
-### Inventory
+| Entity | Fields | Responsibility |
+| --- | --- | --- |
+| **Product** | `id`, `sku`, `name`, `price`, `status`, `createdAt`, `updatedAt` | What may be sold. |
+| **Stock** | `sku`, `availableQuantity`, `reservedQuantity` | Current sellable stock state. |
+| **Reservation** | `id`, `sourceId`, `items[]`, `status`, `createdAt`, `updatedAt` | Temporary reservation associated with an originating process. |
+| **Reservation item** | `sku`, `quantity` | One stock demand within a reservation. |
 
-**Stock**: `sku`, `availableQuantity`, `reservedQuantity`.
-
-**Reservation**: `id`, `sourceId`, `items[]` (`sku`, `quantity`), `status`, `createdAt`, `updatedAt`.
-
-Product describes what may be sold; Stock describes whether it can be sold now. Stock state is deliberately not merged into Product.
+`Product` and `Stock` meet through `sku`, but Stock is not an attribute of Product. Product describes the catalog; Inventory decides current availability.
 
 ## Checkout Service
 
-A **Checkout** temporarily prepares a purchase: `id`, `items[]` (`productId`, `quantity`, `unitPrice`), `total`, `status`, `createdAt`, and `updatedAt`.
+```mermaid
+flowchart LR
+    Checkout[Checkout] --> CheckoutItem[Checkout item]
+```
 
-Checkout retains the price used at preparation time. It does not own payment processing or the order lifecycle.
+| Entity | Fields | Responsibility |
+| --- | --- | --- |
+| **Checkout** | `id`, `items[]`, `total`, `status`, `createdAt`, `updatedAt` | Temporary preparation of a purchase. |
+| **Checkout item** | `productId`, `quantity`, `unitPrice` | Product quantity with the price captured during checkout. |
+
+Checkout retains `unitPrice` and does not own payment processing or the Order lifecycle.
 
 ## Order Service
 
-An **Order** is the commercial transaction: `id`, `items[]` (`productId`, `quantity`, `unitPrice`), `total`, `status`, `createdAt`, and `updatedAt`.
+```mermaid
+flowchart LR
+    Order[Order] --> OrderItem[Order item]
+```
 
-The core Order model must not carry payment, reservation, gateway, authorization, or other foreign-domain identifiers unless a concrete domain need appears. Integration happens through commands and events.
+| Entity | Fields | Responsibility |
+| --- | --- | --- |
+| **Order** | `id`, `items[]`, `total`, `status`, `createdAt`, `updatedAt` | Commercial transaction and its lifecycle. |
+| **Order item** | `productId`, `quantity`, `unitPrice` | Immutable commercial line information. |
+
+Order does not hold Payment IDs, Reservation IDs, gateway details, or authorization data. Progress from inventory and payment arrives through events.
 
 ## Payment Service
 
-Payment is a reusable payment platform, not an e-commerce-only service. Its entities are Payment, Authorization, Capture, and Refund; they are modules in the same deployable, not separate microservices.
+```mermaid
+flowchart LR
+    Payment[Payment]
+    Authorization[Authorization]
+    Capture[Capture]
+    Refund[Refund]
+    Gateway[Payment gateway port]
 
-### Payment
+    Payment --> Authorization
+    Authorization --> Capture
+    Payment --> Refund
+    Authorization -. gateway adapter .-> Gateway
+```
 
-| Field | Meaning |
+| Entity | Fields | Responsibility |
+| --- | --- | --- |
+| **Payment** | `id`, `sourceId`, `sourceType`, `amount`, `currency`, `paymentMethod`, `status` | Reusable payment lifecycle rooted in an opaque external source. |
+| **Authorization** | `id`, `amount`, `gateway`, `status`, `createdAt`, `updatedAt` | Authorization attempt and gateway outcome. |
+| **Capture** | `id`, `amount`, `status`, `createdAt`, `updatedAt` | Settlement of an authorized amount. |
+| **Refund** | `id`, `amount`, `status`, `createdAt`, `updatedAt` | Return of a paid amount. |
+
+### Why `sourceId` + `sourceType`?
+
+```mermaid
+flowchart LR
+    OrderSource[Order] -->|sourceId + sourceType ORDER| Payment
+    InvoiceSource[Invoice] -->|sourceId + sourceType INVOICE| Payment
+    SubscriptionSource[Subscription] -->|sourceId + sourceType SUBSCRIPTION| Payment
+```
+
+Payment deliberately has no `orderId`. The `sourceId`/`sourceType` pair is an opaque boundary reference: it gives Payment enough context to associate a transaction, without making Order the only possible source. This preserves reuse for invoices, subscriptions, and future products, and prevents bidirectional coupling.
+
+Authorization, Capture, Refund, and gateway routing remain modules of Payment Service. Gateway-specific logic belongs behind infrastructure adapters, not in the domain entities.
+
+## Boundary rules
+
+| Rule | Consequence |
 | --- | --- |
-| `id` | Payment identifier. |
-| `sourceId` | Opaque identifier of the process/entity that initiated payment. |
-| `sourceType` | Type of that source, such as `ORDER`, `INVOICE`, or `SUBSCRIPTION`. |
-| `amount`, `currency` | Monetary amount and currency. |
-| `paymentMethod` | Requested payment method. |
-| `status` | Payment lifecycle status. |
-
-`sourceId` plus `sourceType` is intentional. Payment must not expose an `orderId` field: doing so would couple its reusable domain to Order and make other sources second-class cases. The opaque pair preserves traceability at the boundary while allowing payments for orders, invoices, subscriptions, and future products without changing the model.
-
-### Payment lifecycle modules
-
-- **Authorization**: `id`, `amount`, `gateway`, `status`, `createdAt`, `updatedAt`.
-- **Capture**: `id`, `amount`, `status`, `createdAt`, `updatedAt`.
-- **Refund**: `id`, `amount`, `status`, `createdAt`, `updatedAt`.
-
-Gateway-specific behavior remains in infrastructure adapters behind a `PaymentGateway` port and a gateway-selection strategy. Domain entities do not contain gateway integration logic.
-
-## Cross-domain rule
-
-At service boundaries, prefer opaque identifiers such as `sourceId` instead of another service's entity fields. This avoids bidirectional coupling and preserves independent deployability.
+| Each service owns its data. | No shared tables or cross-service joins. |
+| References across boundaries are opaque. | Use `sourceId`, not another service's internal entity model. |
+| Integration is event-oriented. | State changes move between services through Kafka contracts. |
+| Deployments are independent. | A conceptual module becomes a separate service only when domain or operational complexity requires it. |
