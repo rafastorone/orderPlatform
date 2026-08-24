@@ -8,8 +8,10 @@ Use Docker Engine with the Docker Compose plugin on Ubuntu. Run these commands f
 
 ## Configuration
 
-- src/main/resources/application.yml is used when the service runs from the IDE. It connects to PostgreSQL at localhost:5435, Kafka at localhost:29092, and Redis at localhost:6379.
-- src/main/resources/application-docker.yml is the container profile. It connects through orderflow-network to order-service-postgres:5432, kafka:9092, and redis:6379.
+1. Copy .env.example to .env before starting with Docker Compose. The .env file is ignored by Git.
+
+- src/main/resources/application.yml reads environment variables and provides local IDE defaults: PostgreSQL at localhost:5435, Kafka at localhost:29092, and Redis at localhost:6379.
+- Docker Compose loads .env into the application and PostgreSQL containers. In the example file, the Docker values point to order-service-postgres:5432, kafka:9092, and redis:6379 through orderflow-network.
 
 ## Start
 

@@ -1,9 +1,4 @@
 spring:
-  r2dbc:
-    url: r2dbc:postgresql://payment-service-postgres:5432/payments
-  kafka:
-    bootstrap-servers: kafka:9092
-  data:
-    redis:
-      host: redis
-      port: 6379
+  config:
+    activate:
+      on-profile: docker

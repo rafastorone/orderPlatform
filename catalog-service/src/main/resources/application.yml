@@ -1,19 +1,19 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
     name: catalog-service
   r2dbc:
-    url: r2dbc:postgresql://localhost:5433/catalog
-    username: catalog_user
-    password: catalog_local_password
+    url: r2dbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5433}/${POSTGRES_DB:catalog}
+    username: ${POSTGRES_USER:catalog_user}
+    password: ${POSTGRES_PASSWORD:catalog_local_password}
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 management:
   endpoints:

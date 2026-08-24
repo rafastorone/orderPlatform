@@ -1,19 +1,19 @@
 server:
-  port: 8084
+  port: ${SERVER_PORT:8084}
 
 spring:
   application:
     name: payment-service
   r2dbc:
-    url: r2dbc:postgresql://localhost:5436/payments
-    username: payment_user
-    password: payment_local_password
+    url: r2dbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5436}/${POSTGRES_DB:payments}
+    username: ${POSTGRES_USER:payment_user}
+    password: ${POSTGRES_PASSWORD:payment_local_password}
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 management:
   endpoints:

@@ -4,10 +4,10 @@ services:
   order-service:
     build:
       context: .
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
+    env_file:
+      - .env
     ports:
-      - "8083:8083"
+      - "${SERVER_PORT}:${SERVER_PORT}"
     depends_on:
       order-service-postgres:
         condition: service_healthy
@@ -16,19 +16,17 @@ services:
 
   order-service-postgres:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: orders
-      POSTGRES_USER: username
-      POSTGRES_PASSWORD: password
+    env_file:
+      - .env
     ports:
-      - "5435:5432"
+      - "${POSTGRES_HOST_PORT}:5432"
     volumes:
       - order-service-postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     networks:
       - orderflow-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U order_user -d orders"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 6
