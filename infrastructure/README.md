@@ -23,7 +23,7 @@ Kafka starts in KRaft mode without ZooKeeper. The startup job creates `catalog.e
 
 ## Validation
 
-Run `docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list` to list topics. Run `docker compose exec redis redis-cli ping` to verify Redis. The `orderflow-network` Docker network is created by this project.
+Run `docker compose exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list` to list topics. Run `docker compose exec redis redis-cli ping` to verify Redis. The `orderplatform-network` Docker network is created by this project.
 
 ## Stop and reset
 

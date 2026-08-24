@@ -11,11 +11,11 @@ Use Docker Engine with the Docker Compose plugin on Ubuntu. Run these commands f
 1. Copy .env.example to .env before starting with Docker Compose. The .env file is ignored by Git.
 
 - src/main/resources/application.yml reads environment variables and provides local IDE defaults: PostgreSQL at localhost:5435, Kafka at localhost:29092, and Redis at localhost:6379.
-- Docker Compose loads .env into the application and PostgreSQL containers. In the example file, the Docker values point to order-service-postgres:5432, kafka:9092, and redis:6379 through orderflow-network.
+- Docker Compose loads .env into the application and PostgreSQL containers. In the example file, the Docker values point to order-service-postgres:5432, kafka:9092, and redis:6379 through orderplatform-network.
 
 ## Start
 
-1. From ../infrastructure, run docker compose up -d to start Kafka, Redis, and orderflow-network.
+1. From ../infrastructure, run docker compose up -d to start Kafka, Redis, and orderplatform-network.
 2. Build independently with gradle bootJar; the Dockerfile also builds the JAR in its Gradle build stage.
 3. Run docker compose up --build -d in this directory.
 4. The application is exposed at http://localhost:8083 and PostgreSQL at localhost:5435.

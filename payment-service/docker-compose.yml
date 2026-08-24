@@ -12,7 +12,7 @@ services:
       payment-service-postgres:
         condition: service_healthy
     networks:
-      - orderflow-network
+      - orderplatform-network
 
   payment-service-postgres:
     image: postgres:16-alpine
@@ -24,7 +24,7 @@ services:
       - payment-service-postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     networks:
-      - orderflow-network
+      - orderplatform-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -36,6 +36,6 @@ volumes:
     name: payment-service-postgres-data
 
 networks:
-  orderflow-network:
+  orderplatform-network:
     external: true
-    name: orderflow-network
+    name: orderplatform-network
