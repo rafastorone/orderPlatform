@@ -1,4 +1,4 @@
-# OrderFlow documentation
+# OrderPlatform documentation
 
 - `domain/`: bounded contexts, entities and ownership rules.
 - `architecture/`: current architectural baseline and operational topology.
