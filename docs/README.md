@@ -1,3 +1,5 @@
+# IN PROGRESS
+
 # OrderPlatform documentation
 
 - `domain/`: bounded contexts, entities and ownership rules.
